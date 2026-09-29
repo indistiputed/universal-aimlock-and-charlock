@@ -1,0 +1,450 @@
+local P = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RS = game:GetService("RunService")
+local TS = game:GetService("TweenService")
+
+local plr = P.LocalPlayer
+local cam = workspace.CurrentCamera
+
+local OffsetU = 0
+local OffsetD = 0
+
+local aimOn = false
+local charOn = false
+
+local aimTarget = nil
+local charTarget = nil
+
+local oldAutoRotate = nil
+
+local offBg = Color3.fromRGB(255, 255, 255)
+local onBg = Color3.fromRGB(238, 238, 243)
+local offLine = Color3.fromRGB(210, 210, 218)
+local onLine = Color3.fromRGB(149, 92, 215)
+local ink = Color3.fromRGB(30, 30, 36)
+
+local ui = Instance.new("ScreenGui")
+local popup = Instance.new("Frame")
+local popupCorner = Instance.new("UICorner")
+local popupStroke = Instance.new("UIStroke")
+local popupTitle = Instance.new("TextLabel")
+local popupLink = Instance.new("TextLabel")
+local okBtn = Instance.new("TextButton")
+local okCorner = Instance.new("UICorner")
+
+ui.Name = "LockUI"
+ui.ResetOnSpawn = false
+ui.IgnoreGuiInset = true
+ui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+pcall(function()
+	ui.Parent = game:GetService("CoreGui")
+end)
+if not ui.Parent then
+	ui.Parent = plr:WaitForChild("PlayerGui")
+end
+popup.Name = "WelcomePopup"
+popup.Size = UDim2.new(0, 360, 0, 180)
+popup.Position = UDim2.new(0.5, -180, 0.5, -90)
+popup.BackgroundColor3 = Color3.fromRGB(22, 22, 26)
+popup.BorderSizePixel = 0
+popup.ZIndex = 100
+popup.Parent = ui
+popupCorner.CornerRadius = UDim.new(0, 12)
+popupCorner.Parent = popup
+popupStroke.Color = Color3.fromRGB(48, 48, 55)
+popupStroke.Thickness = 1
+popupStroke.Parent = popup
+popupTitle.Size = UDim2.new(1, -30, 0, 28)
+popupTitle.Position = UDim2.new(0, 15, 0, 18)
+popupTitle.BackgroundTransparency = 1
+popupTitle.Text = "hello hi this is made by"
+popupTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+popupTitle.Font = Enum.Font.Cartoon
+popupTitle.TextSize = 20
+popupTitle.TextXAlignment = Enum.TextXAlignment.Center
+popupTitle.ZIndex = 101
+popupTitle.Parent = popup
+popupLink.Size = UDim2.new(1, -20, 0, 40)
+popupLink.Position = UDim2.new(0, 10, 0, 52)
+popupLink.BackgroundTransparency = 1
+popupLink.Text = "https://scriptblox.com/u/indistiputed"
+popupLink.TextColor3 = Color3.fromRGB(255, 255, 255)
+popupLink.Font = Enum.Font.Cartoon
+popupLink.TextSize = 15
+popupLink.TextWrapped = true
+popupLink.TextXAlignment = Enum.TextXAlignment.Center
+popupLink.ZIndex = 101
+popupLink.Parent = popup
+okBtn.Size = UDim2.new(0, 100, 0, 34)
+okBtn.Position = UDim2.new(0.5, -50, 1, -48)
+okBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+okBtn.BorderSizePixel = 0
+okBtn.Text = "OK"
+okBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+okBtn.Font = Enum.Font.Cartoon
+okBtn.TextSize = 16
+okBtn.AutoButtonColor = false
+okBtn.ZIndex = 101
+okBtn.Parent = popup
+okCorner.CornerRadius = UDim.new(0, 8)
+okCorner.Parent = okBtn
+
+local aimBtn
+local aimStroke
+local charBtn
+local charStroke
+
+local loaded = false
+
+local function makeButton(name, text, y, callback)
+	local btn = Instance.new("Frame")
+	local cr = Instance.new("UICorner")
+	local stroke = Instance.new("UIStroke")
+	local label = Instance.new("TextLabel")
+	local us = Instance.new("UIScale")
+
+	btn.Name = name
+	btn.Size = UDim2.fromOffset(92, 40)
+	btn.Position = UDim2.new(1, -112, 1, y)
+	btn.BackgroundColor3 = offBg
+	btn.BorderSizePixel = 0
+	btn.Active = true
+	btn.ZIndex = 20
+	btn.Parent = ui
+	cr.CornerRadius = UDim.new(0, 12)
+	cr.Parent = btn
+	stroke.Thickness = 2
+	stroke.Color = offLine
+	stroke.Parent = btn
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = text
+	label.TextColor3 = ink
+	label.TextSize = 14
+	label.Font = Enum.Font.FredokaOne
+	label.ZIndex = 21
+	label.Parent = btn
+	us.Parent = btn
+
+	local held
+	local dragStart
+	local startPos
+	local conn
+	local moved = false
+
+	local function isPress(i)
+		return i.UserInputType == Enum.UserInputType.Touch
+			or i.UserInputType == Enum.UserInputType.MouseButton1
+	end
+
+	btn.InputBegan:Connect(function(i)
+		if not isPress(i) then
+			return
+		end
+
+		held = i
+		dragStart = i.Position
+		startPos = btn.Position
+		moved = false
+
+		if conn then
+			conn:Disconnect()
+		end
+
+		conn = UIS.InputChanged:Connect(function(x)
+			if x ~= held and x.UserInputType ~= Enum.UserInputType.MouseMovement then
+				return
+			end
+
+			local d = x.Position - dragStart
+
+			if d.Magnitude > 8 then
+				moved = true
+			end
+
+			if moved then
+				btn.Position = UDim2.new(
+					startPos.X.Scale,
+					startPos.X.Offset + d.X,
+					startPos.Y.Scale,
+					startPos.Y.Offset + d.Y
+				)
+			end
+		end)
+	end)
+
+	btn.InputEnded:Connect(function(i)
+		if not isPress(i) then
+			return
+		end
+
+		if conn then
+			conn:Disconnect()
+			conn = nil
+		end
+
+		if not moved then
+			TS:Create(
+				us,
+				TweenInfo.new(0.08, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+				{Scale = 0.92}
+			):Play()
+
+			task.delay(0.08, function()
+				if us.Parent then
+					TS:Create(
+						us,
+						TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+						{Scale = 1}
+					):Play()
+				end
+			end)
+
+			callback()
+		end
+
+		held = nil
+		dragStart = nil
+		startPos = nil
+		moved = false
+	end)
+
+	return btn, stroke
+end
+
+local function getTorso(p)
+	local char = p and p.Character
+
+	if not char then
+		return nil
+	end
+
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local torso = char:FindFirstChild("HumanoidRootPart")
+		or char:FindFirstChild("UpperTorso")
+		or char:FindFirstChild("Torso")
+
+	if not hum or hum.Health <= 0 or not torso then
+		return nil
+	end
+
+	return torso
+end
+
+local function getNearestPlayer()
+	local char = plr.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+
+	if not root then
+		return nil
+	end
+
+	local nearest
+	local distance = math.huge
+
+	for _, p in ipairs(P:GetPlayers()) do
+		if p ~= plr then
+			local torso = getTorso(p)
+
+			if torso then
+				local d = (root.Position - torso.Position).Magnitude
+
+				if d < distance then
+					distance = d
+					nearest = p
+				end
+			end
+		end
+	end
+
+	return nearest
+end
+
+local function setVisual(btn, stroke, state)
+	if not btn or not stroke then
+		return
+	end
+
+	TS:Create(
+		btn,
+		TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{BackgroundColor3 = state and onBg or offBg}
+	):Play()
+
+	TS:Create(
+		stroke,
+		TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{Color = state and onLine or offLine}
+	):Play()
+end
+
+local function toggleAim()
+	aimOn = not aimOn
+
+	if aimOn then
+		aimTarget = getNearestPlayer()
+	else
+		aimTarget = nil
+	end
+
+	setVisual(aimBtn, aimStroke, aimOn)
+end
+
+local function toggleChar()
+	charOn = not charOn
+
+	local char = plr.Character
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+	if charOn then
+		charTarget = getNearestPlayer()
+
+		if humanoid then
+			oldAutoRotate = humanoid.AutoRotate
+			humanoid.AutoRotate = false
+		end
+	else
+		charTarget = nil
+
+		if humanoid and oldAutoRotate ~= nil then
+			humanoid.AutoRotate = oldAutoRotate
+		end
+
+		oldAutoRotate = nil
+	end
+
+	setVisual(charBtn, charStroke, charOn)
+end
+
+local function startSystem()
+	aimBtn, aimStroke = makeButton("Aimlock", "Aimlock", -148, toggleAim)
+	charBtn, charStroke = makeButton("Charlock", "Charlock", -98, toggleChar)
+
+	RS:BindToRenderStep(
+		"LockSystem",
+		Enum.RenderPriority.Camera.Value + 1,
+		function()
+			cam = workspace.CurrentCamera
+
+			if aimOn then
+				local torso = getTorso(aimTarget)
+
+				if not torso then
+					aimOn = false
+					aimTarget = nil
+					setVisual(aimBtn, aimStroke, false)
+				else
+					local focus = cam.Focus.Position
+					local dist = (cam.CFrame.Position - focus).Magnitude
+					local dir = torso.Position - focus
+
+					if dir.Magnitude > 0.1 then
+						local cameraPosition =
+							focus
+							- dir.Unit * dist
+							+ Vector3.new(0, OffsetU, 0)
+							+ cam.CFrame.RightVector * OffsetD
+
+						cam.CFrame = CFrame.lookAt(
+							cameraPosition,
+							torso.Position
+						)
+					end
+				end
+			end
+
+			if charOn then
+				local char = plr.Character
+				local root = char and char:FindFirstChild("HumanoidRootPart")
+				local torso = getTorso(charTarget)
+
+				if not root or not torso then
+					charOn = false
+					charTarget = nil
+					setVisual(charBtn, charStroke, false)
+
+					local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+					if humanoid and oldAutoRotate ~= nil then
+						humanoid.AutoRotate = oldAutoRotate
+					end
+
+					oldAutoRotate = nil
+				else
+					local targetPos = Vector3.new(
+						torso.Position.X,
+						root.Position.Y,
+						torso.Position.Z
+					)
+
+					if (targetPos - root.Position).Magnitude > 0.01 then
+						root.CFrame = CFrame.lookAt(
+							root.Position,
+							targetPos
+						)
+					end
+				end
+			end
+		end
+	)
+
+	P.PlayerRemoving:Connect(function(p)
+		if p == aimTarget then
+			aimOn = false
+			aimTarget = nil
+			setVisual(aimBtn, aimStroke, false)
+		end
+
+		if p == charTarget then
+			charOn = false
+			charTarget = nil
+			setVisual(charBtn, charStroke, false)
+
+			local char = plr.Character
+			local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+
+			if humanoid and oldAutoRotate ~= nil then
+				humanoid.AutoRotate = oldAutoRotate
+			end
+
+			oldAutoRotate = nil
+		end
+	end)
+
+	plr.CharacterAdded:Connect(function()
+		aimOn = false
+		charOn = false
+		aimTarget = nil
+		charTarget = nil
+
+		setVisual(aimBtn, aimStroke, false)
+		setVisual(charBtn, charStroke, false)
+
+		oldAutoRotate = nil
+	end)
+end
+
+local function loadScript()
+	if loaded then
+		return
+	end
+
+	loaded = true
+
+	popup:Destroy()
+	startSystem()
+
+	print("wow bro is loaded look")
+end
+
+okBtn.MouseEnter:Connect(function()
+	okBtn.BackgroundColor3 = Color3.fromRGB(48, 48, 54)
+end)
+
+okBtn.MouseLeave:Connect(function()
+	okBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+end)
+
+okBtn.MouseButton1Click:Connect(function()
+	loadScript()
+end)
